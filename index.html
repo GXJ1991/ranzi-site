@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>判断力日志</title>
+<style>
+  :root{
+    --bg:#f5f7fa;
+    --bg-soft:#eef2f6;
+    --card:#ffffff;
+    --card-hover:#f8fafc;
+    --border:#dce3ea;
+    --text:#1f2937;
+    --muted:#64748b;
+    --green:#0f9d73;
+    --green-dim:#0b8f62;
+    --green-soft:rgba(15,157,115,.10);
+    --up:#dc2626;
+    --down:#16a34a;
+    --amber:#b45309;
+    --radius:14px;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  header{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.94);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .nav{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;letter-spacing:.5px}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+  .brand small{color:var(--muted);font-size:12px;font-weight:400;margin-left:6px}
+  nav.links{display:flex;gap:6px}
+  nav.links button{
+    background:none;border:none;color:var(--muted);
+    font-size:14px;padding:8px 15px;border-radius:8px;cursor:pointer;
+    font-family:inherit;transition:.2s;
+  }
+  nav.links button:hover{color:var(--text);background:var(--card)}
+  nav.links button.active{color:var(--green);background:var(--green-soft)}
+  .menu-btn{display:none;background:none;border:1px solid var(--border);color:var(--text);
+    padding:6px 12px;border-radius:8px;cursor:pointer;font-size:14px}
+
+  main{min-height:calc(100vh - 160px);padding:36px 0 60px}
+  .page{display:none;animation:fade .3s ease}
+  .page.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .hero{padding:26px 0 34px}
+  .hero h1{font-size:34px;font-weight:600;letter-spacing:-.5px;margin-bottom:12px}
+  .hero h1 em{font-style:normal;color:var(--green)}
+  .hero p{color:var(--muted);font-size:15px;max-width:640px}
+  .hero .rule{width:52px;height:3px;background:var(--green);border-radius:2px;margin:18px 0 0}
+
+  .section-title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:600;margin:34px 0 16px}
+  .section-title::before{content:"";width:4px;height:18px;background:var(--green);border-radius:2px}
+  .section-title .sub{color:var(--muted);font-size:12px;font-weight:400;margin-left:auto}
+
+  .cards{display:grid;gap:14px}
+  .cards.c4{grid-template-columns:repeat(4,1fr)}
+  .cards.c3{grid-template-columns:repeat(3,1fr)}
+  .cards.c2{grid-template-columns:repeat(2,1fr)}
+
+  .card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px;transition:.2s;
+  }
+  .card:hover{border-color:var(--green-dim);transform:translateY(-2px)}
+  .card .label{color:var(--muted);font-size:12px;margin-bottom:8px}
+  .card .value{font-size:26px;font-weight:600;color:var(--green);letter-spacing:-.5px}
+  .card .value.small{font-size:18px}
+  .card .note{color:var(--muted);font-size:12px;margin-top:6px}
+
+  .preview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .preview{
+    background:var(--bg-soft);border:1px solid var(--border);
+    border-radius:var(--radius);padding:18px;cursor:pointer;transition:.2s;
+  }
+  .preview:hover{border-color:var(--green-dim)}
+  .preview .tag{display:inline-block;font-size:11px;color:var(--green);
+    background:var(--green-soft);padding:3px 9px;border-radius:20px;margin-bottom:12px}
+  .preview h3{font-size:15px;font-weight:600;margin-bottom:8px;line-height:1.5}
+  .preview .meta{color:var(--muted);font-size:12px}
+
+  .disclaimer{
+    background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);
+    border-radius:12px;padding:14px 18px;color:var(--amber);font-size:13px;margin-bottom:24px;
+  }
+  .disclaimer b{color:#92400e}
+
+  .item{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px 22px;margin-bottom:14px;transition:.2s;
+  }
+  .item:hover{border-color:var(--green-dim)}
+  .item .top{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+  .item .date{color:var(--muted);font-size:12px;font-family:ui-monospace,Menlo,monospace}
+  .item h3{font-size:16px;font-weight:600;flex:1}
+  .item p{color:var(--muted);font-size:14px;margin-bottom:6px}
+  .item ul{margin:8px 0 0 18px;color:var(--muted);font-size:14px}
+  .item li{margin-bottom:4px}
+  .badge{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+  .badge.up{color:var(--up);border-color:rgba(220,38,38,.35);background:rgba(220,38,38,.08)}
+  .badge.down{color:var(--down);border-color:rgba(22,163,74,.35);background:rgba(22,163,74,.08)}
+  .badge.info{color:var(--green);border-color:var(--green-dim);background:var(--green-soft)}
+
+  .index-row{display:flex;gap:22px;flex-wrap:wrap;margin:12px 0 6px}
+  .index{display:flex;flex-direction:column}
+  .index .name{color:var(--muted);font-size:11px}
+  .index .num{font-size:15px;font-weight:600;font-family:ui-monospace,Menlo,monospace}
+  .num.up{color:var(--up)} .num.down{color:var(--down)}
+  .card .value.up{color:var(--up)} .card .value.down{color:var(--down)}
+
+  .st-table{width:100%;border-collapse:collapse;font-size:13px}
+  .st-table th{text-align:left;color:var(--muted);font-weight:400;padding:10px 8px;border-bottom:1px solid var(--border)}
+  .st-table td{padding:12px 8px;border-bottom:1px solid var(--border);color:var(--text)}
+  .st-table tr:last-child td{border-bottom:none}
+
+  .news-list{list-style:none}
+  .news-list li{padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:14px;font-size:14px}
+  .news-list li:last-child{border-bottom:none}
+  .news-list .src{color:var(--green);font-size:11px;white-space:nowrap;min-width:64px;padding-top:3px}
+  .news-list .txt{color:var(--muted)}
+  .news-list .txt b{color:var(--text);font-weight:500}
+
+  .ext-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--amber);
+    border-radius:var(--radius);padding:20px 22px;margin-bottom:14px;transition:.2s}
+  .ext-card:hover{border-color:var(--green-dim);border-left-color:var(--amber)}
+  .ext-card .ext-top{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  .ext-card .ext-top h3{font-size:16px;font-weight:600;flex:1}
+  .ext-card .chain{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;
+    font-size:12px;color:var(--muted)}
+  .ext-card .chain .node{background:var(--green-soft);color:var(--green);
+    border:1px solid var(--green-dim);padding:3px 10px;border-radius:6px}
+  .ext-card .chain .arrow{color:var(--amber)}
+  .ext-card .ev{color:var(--muted);font-size:13px;margin-bottom:10px}
+  .judge{background:var(--bg-soft);border-radius:8px;padding:12px 14px;
+    color:var(--text);font-size:13px}
+  .judge b{color:var(--amber);font-weight:500}
+
+  .gh-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:24px 26px;margin-bottom:18px;transition:.2s}
+  .gh-card:hover{border-color:var(--green-dim)}
+  .gh-card .gh-hook{font-size:18px;font-weight:600;color:var(--green);line-height:1.5;margin-bottom:12px}
+  .gh-card .gh-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .gh-card .gh-name{font-size:14px;font-weight:600;color:var(--text)}
+  .gh-card .tag{font-size:11px;color:var(--muted);border:1px solid var(--border);padding:2px 9px;border-radius:20px}
+  .gh-card .tag.star{color:var(--amber);border-color:rgba(180,83,9,.35)}
+  .gh-card .gh-tagline{color:var(--text);font-size:14px;margin-bottom:16px}
+  .gh-card .gh-label{font-size:11px;color:var(--green);font-weight:500;
+    letter-spacing:.5px;margin:14px 0 8px}
+  .gh-card .gh-list{margin:0 0 0 18px;color:var(--muted);font-size:13px}
+  .gh-card .gh-list li{margin-bottom:6px}
+  .gh-card .gh-scene{background:var(--bg-soft);border-radius:8px;padding:12px 14px;
+    color:var(--text);font-size:13px}
+  .gh-card .gh-scene b{color:var(--green);font-weight:500}
+  .gh-card .gh-caveat{background:rgba(180,83,9,.07);border:1px solid rgba(180,83,9,.22);
+    border-radius:8px;padding:12px 14px;color:var(--amber);font-size:13px}
+  .gh-card .gh-caveat b{color:#92400e;font-weight:500}
+  .gh-card .gh-link{display:inline-block;margin-top:14px;color:var(--green);font-size:12px;
+    text-decoration:none;border-bottom:1px solid var(--green-dim);padding-bottom:2px}
+  .gh-card .gh-link:hover{color:#0b8f62}
+  .gh-card .verdict{color:var(--muted);font-size:13px;font-style:italic;
+    border-left:2px solid var(--green-dim);padding-left:12px;margin-top:16px}
+
+  .gh-brief{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 20px;margin-bottom:12px;transition:.2s}
+  .gh-brief:hover{border-color:var(--green-dim)}
+  .gh-brief .brief-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+  .gh-brief .brief-no{font-size:12px;color:var(--green);font-weight:600;letter-spacing:.5px}
+  .gh-brief .brief-name{font-size:15px;font-weight:600;color:var(--text)}
+  .gh-brief .brief-desc{font-size:13px;color:var(--muted);line-height:1.7}
+  .gh-brief .brief-row{margin-top:6px;font-size:13px;color:var(--muted);line-height:1.7}
+  .gh-brief .brief-row b{color:var(--green);font-weight:500}
+  .gh-brief .brief-link{font-size:12px;color:var(--green);text-decoration:none;
+    border-bottom:1px solid var(--green-dim);padding-bottom:2px;display:inline-block;margin-top:8px}
+  .gh-brief .brief-link:hover{color:#0b8f62}
+  .brief-note{color:var(--amber);font-size:12px;background:rgba(180,83,9,.07);
+    border:1px solid rgba(180,83,9,.22);border-radius:8px;padding:10px 14px;margin-top:4px}
+
+  /* 热点雷达 */
+  .radar-head{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+  .radar-visual{width:46px;height:46px;border:1px solid var(--green-dim);border-radius:50%;
+    position:relative;overflow:hidden;flex:none}
+  .radar-visual::before,.radar-visual::after{content:'';position:absolute;
+    border:1px solid var(--green-dim);border-radius:50%;opacity:.6}
+  .radar-visual::before{inset:9px}
+  .radar-visual::after{inset:18px}
+  .radar-sweep{position:absolute;inset:0;
+    background:conic-gradient(from 0deg,transparent 0deg,rgba(15,157,115,.28) 42deg,transparent 43deg);
+    animation:radar-scan 4s linear infinite}
+  @keyframes radar-scan{to{transform:rotate(360deg)}}
+  .radar-title{font-size:14px;font-weight:600;color:var(--green)}
+  .radar-desc{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.6}
+  .radar-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .radar-chip{font-size:12px;color:var(--muted);border:1px solid var(--border);
+    background:var(--card);padding:5px 14px;border-radius:20px;cursor:pointer;
+    transition:.2s;font-family:inherit}
+  .radar-chip:hover{border-color:var(--green-dim);color:var(--text)}
+  .radar-chip.on{color:var(--green);border-color:var(--green-dim);background:rgba(15,157,115,.08)}
+  .gh-brief .brief-hook{font-size:16px;font-weight:600;color:var(--green);
+    line-height:1.5;margin-bottom:10px}
+  .gh-brief .brief-cat{font-size:11px;color:var(--muted);border:1px solid var(--border);
+    padding:2px 9px;border-radius:20px}
+
+  .sector-flow{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .sector-box{background:var(--bg-soft);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .sector-box h4{font-size:12px;font-weight:500;margin-bottom:10px}
+  .sector-box.in h4{color:var(--up)}
+  .sector-box.out h4{color:var(--down)}
+  .sector-box .tags{display:flex;flex-wrap:wrap;gap:8px}
+  .sector-box .tags span{font-size:12px;padding:4px 10px;border-radius:6px;background:var(--card)}
+  .sector-box.in .tags span{color:var(--up)}
+  .sector-box.out .tags span{color:var(--down)}
+
+  .empty{color:var(--muted);font-size:13px;padding:18px;text-align:center;
+    border:1px dashed var(--border);border-radius:12px}
+
+  footer{border-top:1px solid var(--border);padding:24px 0;color:var(--muted);font-size:12px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+  @media(max-width:860px){
+    .cards.c4,.cards.c3,.cards.c2,.preview-grid{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:600px){
+    nav.links{display:none;position:absolute;top:66px;left:0;right:0;
+      background:var(--bg-soft);flex-direction:column;padding:12px 24px;border-bottom:1px solid var(--border)}
+    nav.links.open{display:flex}
+    .menu-btn{display:block}
+    .cards.c4,.cards.c3,.cards.c2,.preview-grid,.sector-flow{grid-template-columns:1fr}
+    .hero h1{font-size:27px}
+    .brand small{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand"><span class="dot"></span>判断力日志<small>在三个战场上练判断力</small></div>
+    <button class="menu-btn" onclick="toggleMenu()">菜单</button>
+    <nav class="links" id="navLinks">
+      <button data-page="home" class="active">首页</button>
+      <button data-page="market">盘面雷达</button>
+      <button data-page="ai">AI前沿</button>
+      <button data-page="github">GitHub热点项目</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 首页 -->
+  <section class="page active" id="page-home">
+    <div class="hero">
+      <h1>在三个战场上<em>练判断力</em></h1>
+      <p id="heroDesc"></p>
+      <div class="rule"></div>
+    </div>
+    <div class="section-title">当前状态<span class="sub">数据截至最新更新</span></div>
+    <div class="cards c4" id="statusCards"></div>
+    <div class="section-title">最新动态<span class="sub">三块内容，点卡片进入</span></div>
+    <div class="preview-grid" id="previews"></div>
+  </section>
+
+  <!-- 盘面雷达 -->
+  <section class="page" id="page-market">
+    <div class="hero">
+      <h1>盘面<em>雷达</em></h1>
+      <p>每日盘面扫描、消息观点梳理、海外事件传导。只做记录与判断，不构成任何投资建议。</p>
+      <div class="rule"></div>
+    </div>
+    <div class="disclaimer">
+      <b>免责声明：</b>本栏目为个人学习与记录，所有内容仅为信息整理与个人观点，不构成投资建议。
+      市场有风险，决策请独立判断，盈亏自负。
+    </div>
+    <div class="section-title">盘面复盘<span class="sub">每日 15:30 收盘后更新</span></div>
+    <div id="marketReviews"></div>
+    <div class="section-title">消息与观点<span class="sub">影响判断的关键信息</span></div>
+    <div class="card"><ul class="news-list" id="marketNews"></ul></div>
+    <div class="section-title">外部消息<span class="sub">海外事件 → A股传导 → 我的判断</span></div>
+    <div id="externalNews"></div>
+    <div class="section-title">资金与成交<span class="sub" id="capitalDate"></span></div>
+    <div class="cards c3" id="capitalMetrics"></div>
+    <div class="card" style="margin-top:14px">
+      <div class="sector-flow" id="capitalSectors"></div>
+      <div class="judge" style="margin-top:16px"><b>我的观察：</b><span id="capitalNote"></span></div>
+    </div>
+  </section>
+
+  <!-- AI前沿 -->
+  <section class="page" id="page-ai">
+    <div class="hero">
+      <h1>AI<em>前沿</em></h1>
+      <p>追踪最新进展，写下趋势判断。观点犀利、不中立——给判断，不端着。</p>
+      <div class="rule"></div>
+    </div>
+    <div class="section-title">最新动态<span class="sub">按时间倒序</span></div>
+    <div id="aiNews"></div>
+    <div class="section-title">趋势判断<span class="sub">我的观点，未必正确</span></div>
+    <div class="cards c2" id="aiViews"></div>
+    <div class="section-title">文章精选<span class="sub">公众号原文</span></div>
+    <div class="card"><ul class="news-list" id="aiArticles"></ul></div>
+  </section>
+
+  <!-- GitHub 热点项目 -->
+  <section class="page" id="page-github">
+    <div class="hero">
+      <h1>GitHub<em>热点项目</em></h1>
+      <p>雷达追趋势，深度推荐只写我用过、解决了具体问题的项目。宁缺毋滥。</p>
+      <div class="rule"></div>
+    </div>
+    <div class="section-title">热点项目雷达<span class="sub" id="ghWeekMeta"></span></div>
+    <div class="radar-head">
+      <div class="radar-visual"><div class="radar-sweep"></div></div>
+      <div>
+        <div class="radar-title" id="radarIssue"></div>
+        <div class="radar-desc">按周扫描趋势项目，人工核对后记录。点分类筛选，每条注明「从哪开始」。</div>
+      </div>
+    </div>
+    <div class="radar-filters" id="radarFilters"></div>
+    <div id="ghWeekly"></div>
+    <div class="section-title">深度推荐<span class="sub" id="ghCount"></span></div>
+    <div id="ghProjects"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>判断力日志 · 记录判断，不承诺答案</span>
+    <span id="footYear"></span>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   数据区 SITE_DATA —— 修改内容只动这里，不要改 HTML 结构
+   ============================================================ */
+const SITE_DATA = {
+  "profile": {
+    "desc": "一个石油行业老兵的公开信息雷达。盘面雷达、AI 进展、GitHub 热点项目——记录我看到的、想到的、用过的。判断力靠事上磨炼，不靠口号。"
+  },
+  "status": [
+    {
+      "label": "QuantHub",
+      "value": "v2.4",
+      "note": "量化交易平台"
+    },
+    {
+      "label": "公众号文章",
+      "value": "128",
+      "note": "AI 评论累计"
+    },
+    {
+      "label": "盘后复盘",
+      "value": "每日",
+      "note": "15:30 自动更新"
+    },
+    {
+      "label": "论文",
+      "value": "在修",
+      "note": "定额价格体系"
+    }
+  ],
+  "previews": [
+    {
+      "tag": "A股",
+      "title": "指数缩量整理，题材退潮明显",
+      "meta": "11月24日盘面复盘 · 2 条更新",
+      "to": "market"
+    },
+    {
+      "tag": "AI",
+      "title": "端侧模型的拐点比想象中来得快",
+      "meta": "本周趋势判断 · 5 条动态",
+      "to": "ai"
+    },
+    {
+      "tag": "GitHub",
+      "title": "用 faster-whisper 搭了一套本地转写流",
+      "meta": "本周 1 个项目",
+      "to": "github"
+    }
+  ],
+  "marketReviews": [
+    {
+      "date": "2026-11-24",
+      "title": "指数红了，我却亏钱了？今天这盘面有点拧巴｜11.24复盘",
+      "indexes": [
+        {
+          "name": "上证指数",
+          "num": "3,548.37",
+          "chg": "+0.27%",
+          "dir": "up"
+        },
+        {
+          "name": "科创50",
+          "num": "1,250.09",
+          "chg": "+1.81%",
+          "dir": "up"
+        },
+        {
+          "name": "深证成指",
+          "num": "10,423.60",
+          "chg": "-0.29%",
+          "dir": "down"
+        },
+        {
+          "name": "创业板指",
+          "num": "2,278.99",
+          "chg": "-0.05%",
+          "dir": "down"
+        }
+      ],
+      "points": [
+        "成交概况：两市成交1.67万亿，量能不算小。但指数分化、个股普跌，说明资金没闲着，是在板块间快速倒腾。放量不涨个股，这量价关系得留个心眼。",
+        "市场情绪：涨停数不少跌停也少，但下跌家数占压倒性优势，这情绪谈不上暖。跟前期比算是修复中的分化状态，资金只认少数方向。明天情绪大概率还是结构性轮动，别指望全面开花。",
+        "我的判断：说句大实话，今天这种指数红、个股绿的行情，最考验心态。上证靠权重撑着，但深成指和创业板指都翻绿了，说明成长方向压力还在。成交额1.67万亿不算低，可资金全在能源金属、保险、消费电子这几个方向打转，轮动快、持续性存疑。明天我个人的看法是，先看涨跌家数能不能修复，如果还是跌多涨少，那指数再红也意义不大。"
+      ]
+    },
+    {
+      "date": "2026-11-21",
+      "title": "权重护盘，赚钱效应一般",
+      "indexes": [
+        {
+          "name": "上证指数",
+          "num": "3818.35",
+          "chg": "+0.28%",
+          "dir": "up"
+        },
+        {
+          "name": "深证成指",
+          "num": "12146.9",
+          "chg": "+0.11%",
+          "dir": "up"
+        },
+        {
+          "name": "创业板指",
+          "num": "2564.72",
+          "chg": "-0.06%",
+          "dir": "down"
+        }
+      ],
+      "points": [
+        "大金融、中字头贡献主要指数涨幅，但上涨家数不足三成。",
+        "指数强、覆盖面窄的结构，说明资金抱团权重，账户体感偏冷。",
+        "我的判断：这种结构持续性存疑，追高权重性价比不高。"
+      ]
+    }
+  ],
+  "marketNews": [
+    {
+      "src": "板块",
+      "txt": "<b>能源金属 +2.23%</b>，资金关注度上升。"
+    },
+    {
+      "src": "板块",
+      "txt": "<b>保险 +2.08%</b>，资金关注度上升。"
+    },
+    {
+      "src": "板块",
+      "txt": "<b>消费电子 +2.06%</b>，资金关注度上升。"
+    },
+    {
+      "src": "概念",
+      "txt": "<b>智能音箱 +2.92%</b>，题材热度延续。"
+    },
+    {
+      "src": "概念",
+      "txt": "<b>兵装重组概念 +2.33%</b>，题材热度延续。"
+    },
+    {
+      "src": "资金",
+      "txt": "今天资金明显往能源金属和保险里钻，腾远钴业涨超14%带飞板块，中国人寿也涨了3个多点。消费电子跟着智能音箱、无线耳机概念走强，奥尼电子直接20cm。反观贵金属跌近4%，煤炭、燃气、工业金属都在调整。这轮动速度说实话挺快的，追高的朋友容易两头挨打。"
+    }
+  ],
+  "externalNews": [
+    {
+      "date": "2026-11-23",
+      "title": "黄仁勋复职英伟达 CEO，全球 AI 板块剧烈波动",
+      "event": "11 月 12 日英伟达宣布黄仁勋辞去 CEO、总裁及董事职务；11 月 23 日董事会一致同意其即日起复任。复职当日英伟达股价单日上涨 31.48%，市值单日增加约 9520 亿美元。此前辞职期间，外界一度担忧下一代芯片路线与交付节奏。",
+      "chain": [
+        "英伟达复职",
+        "AI 硬件情绪修复",
+        "A股算力芯片跟涨"
+      ],
+      "judge": "这是情绪修复，不是基本面反转。真正决定盈利预期的是云厂商部署节奏和毛利率能否稳住，不是老板是谁。国产替代的逻辑也不会因为一个人回归就停——CUDA 生态的迁移成本才是关键变量。"
+    },
+    {
+      "date": "2026-11-17",
+      "title": "美国收紧第三国芯片转口管制",
+      "event": "美国商务部发布新规，要求从特定国家购买先进半导体的买家在转售或转移时需获得许可证，被指针对绕道第三国获取先进 AI 芯片的通道。中国商务部表示强烈不满和坚决反对。",
+      "chain": [
+        "出口管制收紧",
+        "算力获取不确定性上升",
+        "国产算力自主化加速"
+      ],
+      "judge": "管制越紧，国产算力的窗口越大。但别把政策消息当成买入信号——硬件性能追得快，软件生态的迁移成本才是真瓶颈。看落地订单，不看口号。"
+    }
+  ],
+  "capital": {
+    "date": "2026-11-24",
+    "metrics": [
+      {
+        "name": "两市成交额",
+        "value": "两市成交1.67万亿",
+        "chg": "两市成交1.67万亿，量能不算小。但指数分化、个股普跌，说明资金没闲着，是在板块间快速倒腾。放量不涨个股，这量价关系得留",
+        "dir": "up"
+      },
+      {
+        "name": "主力资金",
+        "value": "今天资金明显往能源金属和保险里钻",
+        "chg": "今天资金明显往能源金属和保险里钻，腾远钴业涨超14%带飞板块，中国人寿也涨了3个多点。消费电子跟着智能音箱、无线耳机概念",
+        "dir": "up"
+      },
+      {
+        "name": "市场情绪",
+        "value": "修复",
+        "chg": "涨停88只，跌停9只，上涨1951家，下跌3498家。",
+        "dir": "up"
+      }
+    ],
+    "sectors": {
+      "inflow": [
+        "能源金属",
+        "保险",
+        "消费电子"
+      ],
+      "outflow": [
+        "贵金属",
+        "燃气",
+        "工业金属"
+      ]
+    },
+    "note": "说句大实话，今天这种指数红、个股绿的行情，最考验心态。上证靠权重撑着，但深成指和创业板指都翻绿了，说明成长方向压力还在。成交额1.67万亿不算低，可资金全在能源金属、保险、消费电子这几个方向打转，轮动快、持续性存疑。明天我个人的看法是，先看涨跌家数能不能修复，如果还是跌多涨少，那指数再红也意义不大。ST和小盘涨停潮这种热闹，普通人看看就好，别上头。风险提示："
+  },
+  "aiNews": [
+    {
+      "date": "2026-11-25",
+      "title": "智谱GLM-5.4换架构，网友喊超预期",
+      "points": [
+        "智谱发布GLM-5.4，主打全新架构而非版本微调，网友评价超过预期。",
+        "我的判断：敢在架构层面动刀，说明国产大模型开始从堆参数转向拼底层结构，但“网友直呼”是最廉价的口碑，真正成色要看第三方评测和长上下文稳定性。",
+        "对普通用户来说，短期能感知的是响应速度和复杂任务完成度，别被“全新架构”四个字催着迁移，等常用产品实际接入再判断。"
+      ]
+    },
+    {
+      "date": "2026-11-25",
+      "title": "端侧AI组队计算，效率涨270%",
+      "points": [
+        "业界首次提出“端侧超节点”，让端侧设备协同计算，称AI效率提升270%，且不用换芯片或模型。",
+        "我的判断：这是把分布式计算的老思路搬到端侧，270%大概率是特定任务下的峰值数字，真正的难关在调度、功耗和跨设备异构兼容，实验室指标不等于日常体验。",
+        "对普通用户的意义是老设备理论上也能跑更强端侧AI，但落地初期更可能锁在单一厂商生态内，跨品牌“组队”短期内仍是宣传话术。"
+      ]
+    },
+    {
+      "date": "2026-11-25",
+      "title": "蚂蚁医疗AI五连发，开源加本地部署",
+      "points": [
+        "蚂蚁医疗健康AI一次发布五项能力，覆盖开源、本地部署以及“望闻问切”相关场景。",
+        "我的判断：医疗AI的胜负手从来不是模型参数，而是合规、数据闭环和医院渠道；开源加本地部署是绕开数据出域顾虑的务实打法，但也让出问题时的责任边界更模糊。",
+        "对普通用户来说，最先接触到的会是分诊、随访、报告解读这类低风险环节，别把AI输出当诊断结论，它的价值是省排队时间而不是替医生拍板。"
+      ]
+    },
+    {
+      "date": "2026-11-24",
+      "title": "端侧模型能力跃升，本地推理成本继续下探",
+      "points": [
+        "多家厂商发布新一代小参数模型，在端侧设备上跑通复杂推理任务。",
+        "我的判断：端侧不是云端替代品，而是新增场景——隐私敏感、低延迟、离线可用这三类需求会被打开。",
+        "对普通用户的实际意义：一年之内，本地跑一个够用的助手会变成常态。"
+      ]
+    },
+    {
+      "date": "2026-11-20",
+      "title": "Agent 从演示走向生产，但可靠性仍是瓶颈",
+      "points": [
+        "企业级 Agent 落地案例增多，集中在流程固定、容错空间大的场景。",
+        "我的判断：现在谈'替代人'为时过早，真正的价值在把重复流程自动化，而不是做通用智能。",
+        "值得关注的方向是可验证、可回滚的 Agent 架构，这比模型能力本身更决定落地成败。"
+      ]
+    },
+    {
+      "date": "2026-11-15",
+      "title": "开源生态分化：小而专开始跑赢大而全",
+      "points": [
+        "一批垂直领域的小模型、专用工具获得更高活跃度。",
+        "我的判断：通用大模型的军备竞赛边际收益在下降，下一阶段的机会在细分场景的深度。"
+      ]
+    }
+  ],
+  "aiViews": [
+    {
+      "title": "别用参数量判断模型价值",
+      "text": "参数量是成本指标，不是能力指标。真正决定能不能用的是场景匹配度——一个 7B 的模型在合适场景下比 700B 更有用。"
+    },
+    {
+      "title": "AI 内容的稀缺性在判断不在生成",
+      "text": "生成已经不稀缺，稀缺的是知道什么值得生成、什么该砍掉。会判断的人，价值只会更高。"
+    },
+    {
+      "title": "端侧会重塑隐私叙事",
+      "text": "当推理能在本地完成，'数据上云'就不再是默认选项。这会倒逼一整类产品重新设计。"
+    },
+    {
+      "title": "工具链比模型更值得盯",
+      "text": "模型半年一换，工具链沉淀下来是复利。我更愿意花时间研究工作流怎么搭，而不是追新模型发布。"
+    }
+  ],
+  "aiArticles": [
+    {
+      "src": "公众号",
+      "txt": "<b>别被'一周赚 1W'的 AI 叙事带偏</b>——工具降低了门槛，但判断力才是护城河。"
+    },
+    {
+      "src": "公众号",
+      "txt": "<b>端侧模型的拐点比想象中来得快</b>——那些还押注纯云端的产品，可能要重新算账了。"
+    },
+    {
+      "src": "公众号",
+      "txt": "<b>Agent 落地最大的障碍不是智能，是可靠性</b>——不可回滚的自动化，不如不做。"
+    }
+  ],
+  "ghWeekly": {
+    "issue": "03",
+    "date": "11月25日 · GitHub 周趋势",
+    "cats": [
+      "全部",
+      "AI Agent",
+      "开发工具"
+    ],
+    "items": [
+      {
+        "hook": "别再跟 Agent 来回猜需求",
+        "name": "plannotator",
+        "cat": "AI Agent",
+        "desc": "把规划、决策、代码标注和团队评审放进同一个工作区，并一键把全部反馈回传给 Agent，省去在多个工具之间来回搬运。",
+        "start": "先挑一个正在用 Agent 写代码的小项目，把规划或待评审代码放进工作区做标注与评审，完整跑一次一键回传反馈的流程。",
+        "url": "https://github.com/backnotprop/plannotator"
+      },
+      {
+        "hook": "给编码 Agent 备好一套技能库",
+        "name": "stitch-skills",
+        "cat": "AI Agent",
+        "desc": "面向 Stitch MCP 服务器的 Agent Skills 库，每个技能遵循 Agent Skills 开放标准，可兼容 Antigravity、Gemini CLI、Claude Code、Cursor 等编码 Agent。",
+        "start": "先确认本地编码 Agent 接入 Stitch MCP 服务器的方式，再从技能库里挑一个和当前任务相关的技能，按开放标准装上试跑。",
+        "url": "https://github.com/google-labs-code/stitch-skills"
+      },
+      {
+        "hook": "让编码 Agent 跟上最新 Web 规范",
+        "name": "modern-web-guidance-src",
+        "cat": "AI Agent",
+        "desc": "把你的编码 Agent 更新到最新 Web 最佳实践，减少它给出过时写法的概率，让生成的代码更贴近当前规范。",
+        "start": "先浏览仓库里规范条目的组织结构，挑一条你团队经常踩坑的 Web 实践，接入自己的编码 Agent，观察它是否真的会引用。",
+        "url": "https://github.com/GoogleChrome/modern-web-guidance-src"
+      },
+      {
+        "hook": "阿里规模验证过的代码审查利器",
+        "name": "open-code-review",
+        "cat": "开发工具",
+        "desc": "混合架构的代码审查工具：确定性流水线加 LLM Agent，支持行级精确评论，内置 NPE、线程安全、XSS、SQL 注入等多语言规则集。",
+        "start": "先查看仓库支持的语言规则和接入配置，用一个小仓库跑通确定性流水线，再决定是否叠加 LLM Agent 做行级评论。",
+        "url": "https://github.com/alibaba/open-code-review"
+      }
+    ]
+  },
+  "ghProjects": [
+    {
+      "hook": "拖一下就能转格式，270 种格式，完全离线免费",
+      "name": "Filee",
+      "tags": [
+        "3万+ Star",
+        "MIT",
+        "本地运行"
+      ],
+      "tagline": "不用打开软件窗口，按住 Ctrl 拖动文件，在鼠标旁边完成格式转换。",
+      "highlights": [
+        "圆形菜单设计：Windows 按住 Ctrl 拖动文件，鼠标位置弹出圆环菜单，按 Tab 或滚轮翻到背面有更多工具",
+        "支持 270 种格式，覆盖图片、PDF、Office、视频、音频、电子书、压缩包，连冷门格式也能处理",
+        "批量转换、浏览器直接拖拽（Chrome / Edge / Firefox / Safari）、自定义转换预设"
+      ],
+      "scene": "我的场景：日常文档和图片格式转换，批量处理时不用一个个开软件；本地跑不上传，处理内部材料时没有隐私顾虑。",
+      "caveat": "不是所有格式装完就能用。部分转换依赖 FFmpeg、LibreOffice、Pandoc、Calibre 等引擎，项目会在需要时提示下载。装上 FFmpeg 和 Calibre 基本覆盖绝大多数场景。",
+      "url": "https://github.com/KnifeLemon/Filee",
+      "verdict": "交互设计是真聪明——把转换藏进拖拽动作里。离线免费这一点很对我的胃口。"
+    },
+    {
+      "hook": "长音频转写不再等半天，本地跑不上传",
+      "name": "faster-whisper",
+      "tags": [
+        "Python",
+        "本地推理"
+      ],
+      "tagline": "Whisper 的高效实现，速度比原版快数倍，显存占用更低。",
+      "highlights": [
+        "基于 CTranslate2 推理，CPU / GPU 都能跑，同样的模型速度明显提升",
+        "支持 long-form 长音频，可配合 VAD 做语音活动检测，跳过静音段",
+        "全流程本地完成，音频不上传任何服务器"
+      ],
+      "scene": "我的场景：搭了一套本地音视频转写流程，长音频批量处理，不上传任何数据。",
+      "caveat": "首次使用要下载模型，国内网络建议配镜像；长音频对内存有要求，建议按需选择模型尺寸。",
+      "url": "https://github.com/SYSTRAN/faster-whisper",
+      "verdict": "速度比原版快数倍，本地跑得住，隐私敏感场景首选。"
+    },
+    {
+      "hook": "音视频下载这事儿，它基本是终点站",
+      "name": "yt-dlp",
+      "tags": [
+        "CLI",
+        "自包含 ffmpeg"
+      ],
+      "tagline": "命令行音视频下载器，活跃维护，支持站点广。",
+      "highlights": [
+        "支持大量站点的音视频下载，格式选择、字幕、播放列表都能处理",
+        "可配合 ffmpeg 做合并与转码，命令行一条搞定",
+        "拖入链接列表文件即可批量下载，适合做素材归档"
+      ],
+      "scene": "我的场景：批量下载音视频素材，配合 ffmpeg 抽音频做后续处理。",
+      "caveat": "注意遵守目标站点条款和版权要求，只下载你有权获取的内容。",
+      "url": "https://github.com/yt-dlp/yt-dlp",
+      "verdict": "自包含 ffmpeg，拖进去就能用，省掉配环境的时间。"
+    },
+    {
+      "hook": "网页自动化，比 Selenium 省心得多",
+      "name": "playwright",
+      "tags": [
+        "TypeScript",
+        "浏览器自动化"
+      ],
+      "tagline": "浏览器自动化框架，页面操作、信息提取、截图测试都能干。",
+      "highlights": [
+        "支持 Chromium / Firefox / WebKit，一套 API 通吃",
+        "自动等待机制完善，选择器定位准，比 Selenium 少踩很多时序坑",
+        "自带调试工具，录脚本、回放、抓快照都方便"
+      ],
+      "scene": "我的场景：网页自动化操作与信息提取，处理需要登录和交互的页面。",
+      "caveat": "首次需要下载浏览器内核；用于抓取信息时遵守目标站点规则和 robots 约定。",
+      "url": "https://github.com/microsoft/playwright",
+      "verdict": "比 Selenium 稳定，选择器定位准，调试体验好。"
+    }
+  ]
+};
+
+/* ============================================================
+   渲染逻辑 —— 一般不需要改
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s);
+
+function renderHome(){
+  $('heroDesc').textContent = SITE_DATA.profile.desc;
+  $('statusCards').innerHTML = SITE_DATA.status.map(s=>`
+    <div class="card"><div class="label">${esc(s.label)}</div>
+    <div class="value small">${esc(s.value)}</div><div class="note">${esc(s.note)}</div></div>`).join('');
+  $('previews').innerHTML = SITE_DATA.previews.map(p=>`
+    <div class="preview" onclick="go('${p.to}')">
+    <span class="tag">${esc(p.tag)}</span><h3>${esc(p.title)}</h3>
+    <div class="meta">${esc(p.meta)}</div></div>`).join('');
+}
+
+function renderMarket(){
+  $('marketReviews').innerHTML = SITE_DATA.marketReviews.map(r=>{
+    const idx = r.indexes.map(i=>`<div class="index"><span class="name">${esc(i.name)}</span>
+      <span class="num ${i.dir}">${esc(i.num)} <small>${esc(i.chg)}</small></span></div>`).join('');
+    const pts = r.points.map(p=>`<li>${esc(p)}</li>`).join('');
+    return `<div class="item"><div class="top"><span class="date">${esc(r.date)}</span>
+      <h3>${esc(r.title)}</h3><span class="badge info">盘面复盘</span></div>
+      <div class="index-row">${idx}</div><ul>${pts}</ul></div>`;
+  }).join('');
+  $('marketNews').innerHTML = SITE_DATA.marketNews.map(n=>
+    `<li><span class="src">${esc(n.src)}</span><span class="txt">${n.txt}</span></li>`).join('');
+  $('externalNews').innerHTML = SITE_DATA.externalNews.map(e=>{
+    const chain = e.chain.map((c,i)=>{
+      const node = `<span class="node">${esc(c)}</span>`;
+      return i < e.chain.length-1 ? node+'<span class="arrow">→</span>' : node;
+    }).join('');
+    return `<div class="ext-card"><div class="ext-top">
+      <span class="date">${esc(e.date)}</span><h3>${esc(e.title)}</h3>
+      <span class="badge info">外部消息</span></div>
+      <div class="chain">${chain}</div>
+      <div class="ev">${esc(e.event)}</div>
+      <div class="judge"><b>我的判断：</b>${esc(e.judge)}</div></div>`;
+  }).join('');
+  const cap = SITE_DATA.capital;
+  $('capitalDate').textContent = cap.date;
+  $('capitalMetrics').innerHTML = cap.metrics.map(m=>`
+    <div class="card"><div class="label">${esc(m.name)}</div>
+    <div class="value small ${m.dir}">${esc(m.value)}</div>
+    <div class="note">${esc(m.chg)}</div></div>`).join('');
+  const inTags = cap.sectors.inflow.map(s=>`<span>${esc(s)}</span>`).join('');
+  const outTags = cap.sectors.outflow.map(s=>`<span>${esc(s)}</span>`).join('');
+  $('capitalSectors').innerHTML = `
+    <div class="sector-box in"><h4>资金流入方向</h4><div class="tags">${inTags}</div></div>
+    <div class="sector-box out"><h4>资金流出方向</h4><div class="tags">${outTags}</div></div>`;
+  $('capitalNote').textContent = cap.note;
+}
+
+function renderAi(){
+  $('aiNews').innerHTML = SITE_DATA.aiNews.map(n=>{
+    const pts = n.points.map(p=>`<li>${esc(p)}</li>`).join('');
+    return `<div class="item"><div class="top"><span class="date">${esc(n.date)}</span>
+      <h3>${esc(n.title)}</h3></div><ul>${pts}</ul></div>`;
+  }).join('');
+  $('aiViews').innerHTML = SITE_DATA.aiViews.map(v=>
+    `<div class="gh-card"><div class="gh-name" style="font-size:15px;color:var(--text)">${esc(v.title)}</div>
+    <p style="color:var(--muted);font-size:13px">${esc(v.text)}</p></div>`).join('');
+  $('aiArticles').innerHTML = SITE_DATA.aiArticles.map(a=>
+    `<li><span class="src">${esc(a.src)}</span><span class="txt">${a.txt}</span></li>`).join('');
+}
+
+function renderRadarItems(cat){
+  const items = SITE_DATA.ghWeekly.items.filter(p=>cat==='全部'||p.cat===cat);
+  $('ghWeekly').innerHTML = items.map((p,i)=>`
+    <div class="gh-brief">
+      <div class="brief-hook">${esc(p.hook)}</div>
+      <div class="brief-head"><span class="brief-no">0${i+1}</span><span class="brief-name">${esc(p.name)}</span><span class="brief-cat">${esc(p.cat)}</span></div>
+      <div class="brief-desc">${esc(p.desc)}</div>
+      <div class="brief-row"><b>从哪开始：</b>${esc(p.start)}</div>
+      <a class="brief-link" href="${esc(p.url)}" target="_blank" rel="noopener">官方仓库 →</a>
+    </div>`).join('') + `<div class="brief-note">版本、许可证和依赖会变化，安装前以对应仓库当前内容为准。</div>`;
+}
+
+function renderGithub(){
+  const w = SITE_DATA.ghWeekly;
+  const issueText = `第 ${w.issue} 期 · ${w.date}`;
+  $('ghWeekMeta').textContent = issueText;
+  $('radarIssue').textContent = issueText;
+  $('radarFilters').innerHTML = w.cats.map(c=>
+    `<button class="radar-chip${c==='全部'?' on':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+  $('radarFilters').querySelectorAll('.radar-chip').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      $('radarFilters').querySelectorAll('.radar-chip').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      renderRadarItems(btn.dataset.cat);
+    });
+  });
+  renderRadarItems('全部');
+  $('ghCount').textContent = `共 ${SITE_DATA.ghProjects.length} 个项目`;
+  $('ghProjects').innerHTML = SITE_DATA.ghProjects.map(p=>{
+    const tags = p.tags.map((t,i)=>`<span class="tag${i===0?' star':''}">${esc(t)}</span>`).join('');
+    const hl = p.highlights.map(h=>`<li>${esc(h)}</li>`).join('');
+    return `<div class="gh-card">
+      <div class="gh-hook">${esc(p.hook)}</div>
+      <div class="gh-meta"><span class="gh-name">${esc(p.name)}</span>${tags}</div>
+      <div class="gh-tagline">${esc(p.tagline)}</div>
+      <div class="gh-label">核心亮点</div><ul class="gh-list">${hl}</ul>
+      <div class="gh-label">我的场景</div><div class="gh-scene">${esc(p.scene)}</div>
+      <div class="gh-label">注意</div><div class="gh-caveat">${esc(p.caveat)}</div>
+      <a class="gh-link" href="${esc(p.url)}" target="_blank" rel="noopener">项目地址 →</a>
+      <div class="verdict">${esc(p.verdict)}</div></div>`;
+  }).join('');
+}
+
+/* 导航切换 */
+function go(page){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  $('page-'+page).classList.add('active');
+  document.querySelectorAll('#navLinks button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.page===page);
+  });
+  $('navLinks').classList.remove('open');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleMenu(){ $('navLinks').classList.toggle('open'); }
+
+document.querySelectorAll('#navLinks button').forEach(b=>{
+  b.addEventListener('click',()=>go(b.dataset.page));
+});
+
+/* 初始化 */
+renderHome(); renderMarket(); renderAi(); renderGithub();
+$('footYear').textContent = '© ' + new Date().getFullYear() + ' 判断力日志';
+</script>
+</body>
+</html>
